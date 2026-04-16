@@ -15,7 +15,7 @@ deployApp(
   forceUpdate = TRUE
 )
 
-#   Version A：https://qiujunzhang.shinyapps.io/travel-planner-ab/?group=A
-#   Version B：https://qiujunzhang.shinyapps.io/travel-planner-ab/?group=B
-#   Random Assignment：https://qiujunzhang.shinyapps.io/travel-planner-ab/
-#   Admin：https://qiujunzhang.shinyapps.io/travel-planner-ab/?admin=1
+#   Version A：https://qiujunzhang.shinyapps.io/MyTravel/?group=A
+#   Version B：https://qiujunzhang.shinyapps.io/MyTravel/?group=B
+#   Random Assignment：https://qiujunzhang.shinyapps.io/MyTravel/
+#   Admin：https://qiujunzhang.shinyapps.io/MyTravel/?admin=1
