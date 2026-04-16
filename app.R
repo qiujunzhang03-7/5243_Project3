@@ -735,7 +735,13 @@ server <- function(input, output, session) {
     transport = "Flight", accommodation = "Hotel", days = 5
   )
 
+  # Run once on session init. Using observeEvent with a one-shot trigger
+  # prevents re-firing when cookies or other reactive values update.
+  session_init_done <- reactiveVal(FALSE)
+
   observe({
+    if (session_init_done()) return()
+
     q          <- parseQueryString(session$clientData$url_search)
     url_grp    <- if (!is.null(q$group) && q$group %in% c("A", "B")) q$group else NULL
     cookie_grp <- cookies::get_cookie("ab_group")
@@ -758,6 +764,8 @@ server <- function(input, output, session) {
     is_returning <- !is.null(cookie_grp) && is.null(url_grp)
     log_event(rv$session_id, rv$group, "session_start", 0,
               paste0("returning=", is_returning), session = session)
+
+    session_init_done(TRUE)
   })
 
   output$ver_badge <- renderText({ req(rv$group); paste("Version", rv$group) })
@@ -1074,6 +1082,7 @@ ui_router <- function(req) {
 }
 
 server_router <- function(input, output, session) {
+  # url_search is reactive; isolate() reads it once without dependency
   q <- isolate(parseQueryString(session$clientData$url_search))
   if (!is.null(q$admin) && q$admin == "1") {
     admin_server(input, output, session)
