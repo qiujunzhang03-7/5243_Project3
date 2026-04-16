@@ -1,0 +1,10 @@
+secrets/
+*.json
+
+
+data/
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+rsconnect/
