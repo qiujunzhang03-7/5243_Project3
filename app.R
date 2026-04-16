@@ -1074,8 +1074,6 @@ ui_router <- function(req) {
 }
 
 server_router <- function(input, output, session) {
-  # session$clientData$url_search 是 reactive，必须在 reactive context 里访问
-  # 用 isolate() 一次性读出来，不形成依赖
   q <- isolate(parseQueryString(session$clientData$url_search))
   if (!is.null(q$admin) && q$admin == "1") {
     admin_server(input, output, session)
