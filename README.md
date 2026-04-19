@@ -68,9 +68,7 @@ git clone https://github.com/qiujunzhang03-7/5243_Project3.git
 cd 5243_Project3
 ```
 
-2. Obtain the Google Sheets service account key:
-   - Contact Qiujun directly for `gs_key.json` (not included in the repo for security)
-   - Place it at `secrets/gs_key.json`
+2. The Google Sheets service account key is included at `secrets/gs_key.json`.
 
 3. Run the app in RStudio:
 ```r
