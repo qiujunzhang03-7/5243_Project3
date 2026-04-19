@@ -1,156 +1,161 @@
-# Travel Planner A/B Test
+# Travel Planner A/B Test ✈️
+
+An A/B test investigating whether adding a progress bar increases task-completion rates in a multi-step travel planning web application.
+
+---
+
+## 🚀 Overview
+
+This project designs, deploys, and analyzes a controlled A/B experiment on a Shiny web app. Users plan a trip through a 7-step wizard (destination, travel style, budget, interests, transport, accommodation, duration) and receive a personalized itinerary. The two versions differ only in the presence of a progress bar:
+
+- **Version A (Control):** No progress bar. Users see step content and navigation buttons only.
+- **Version B (Treatment):** A progress bar with numbered dots, a gradient fill rail, and step labels appears at the top of the card.
 
 **Research Question:** Does adding a progress bar increase users' completion rate in a multi-step travel planning webpage?
 
-## Versions
+---
 
-- **A (control):** No progress bar
-- **B (treatment):** Progress bar + step indicator ("Step 3 / 7")
+## 🌐 Live Application
 
-## Data Collection Strategy
+👉 **https://qiujunzhang.shinyapps.io/MyTravel/**
 
-This project uses a **dual-stream logging architecture**:
+Users are randomly assigned to Version A or B (50/50). Assignment is persisted via browser cookie so returning users always see the same version.
 
-1. **Primary: Google Sheets** (via `googlesheets4`)
-   Session-level events, step transitions, completion, and dropout points.
-   Real-time, session-scoped, full user journeys. Used for all statistical analysis.
+---
 
-2. **Supplementary: Google Analytics 4** (via `gtag.js`)
-   Aggregate engagement metrics, device/browser distribution, bounce rate.
-   Provides context on sample composition; not used for primary A/B inference
-   due to aggregation delay (24–48h) and small-sample thresholds.
-
-## Project Structure
+## 📂 Repository Structure
 
 ```
-.
-├── app.R                   # Shiny app (includes A/B logic + admin dashboard)
-├── deploy.R                # Script to deploy to shinyapps.io
-├── secrets/
-│   └── gs_key.json         # Google service account key (DO NOT commit to public repo)
-├── data/
-│   └── events.csv          # Local fallback log (only used if cloud fails)
-└── README.md
+5243_Project3/
+├── app.R                         # Main Shiny app (A/B test logic, logging, admin dashboard)
+├── deploy.R                      # Deployment script for shinyapps.io
+├── google_sheets_setup.R         # One-time script to create and share the Google Sheet
+├── EDA+Visualization.ipynb       # Data cleaning, EDA, simulation, and statistical analysis
+├── travel_planner_ab_test.xlsx   # Collected event data exported from Google Sheets
+├── report.pdf                    # Final report
+├── README.md
+├── .gitignore
+└── 5243Project3.Rproj
 ```
 
-## Setup (one time)
+---
 
-### 1. Install R packages
+## ⚙️ Installation
+
+Make sure you have R 4.5+ and RStudio installed.
+
+Install required R packages:
 
 ```r
-install.packages(c("shiny", "shinyjs", "cookies",
-                   "googlesheets4", "googledrive", "rsconnect"))
+install.packages(c("shiny", "shinyjs", "cookies", "googlesheets4", "googledrive", "rsconnect"))
 ```
 
-### 2. Google Cloud + Sheets setup
+---
 
-See the detailed guide in the team handoff doc. Quick version:
+## 🚀 Running the App
 
-1. Create Google Cloud project, enable **Sheets API** and **Drive API**
-2. Create a service account (`shiny-logger`), download its JSON key
-3. Save the key as `secrets/gs_key.json`
-4. Create the Google Sheet and share it with the service account's email
-5. Copy the Sheet ID into `app.R` (the `SHEET_ID` variable at the top)
+### 🌐 Option 1: Use Online (Recommended)
 
-### 3. Google Analytics setup
+Access the deployed application directly in your browser:
 
-1. Create a GA4 property at https://analytics.google.com/
-2. Add a Web data stream; copy the **Measurement ID** (form `G-XXXXXXXXXX`)
-3. Open `app.R` and replace **both occurrences** of `G-XXXXXXXXXX` with your ID
-   (one in the `<script src=...>` tag, one in the `gtag('config', ...)` call)
+👉 https://qiujunzhang.shinyapps.io/MyTravel/
 
-### 4. Run locally
+### 💻 Option 2: Run Locally
 
+1. Clone the repository:
+```bash
+git clone https://github.com/qiujunzhang03-7/5243_Project3.git
+cd 5243_Project3
+```
+
+2. Obtain the Google Sheets service account key:
+   - Contact Qiujun directly for `gs_key.json` (not included in the repo for security)
+   - Place it at `secrets/gs_key.json`
+
+3. Run the app in RStudio:
 ```r
 shiny::runApp("app.R")
 ```
 
-Verify in a browser:
-- Right-side badge shows "Version A" or "Version B"
-- A row appears in your Google Sheet (`session_start`)
+The app will open in your browser. A badge in the top-right corner shows the assigned version (A or B).
 
-## A/B Assignment Logic
+> **Note:** Without `gs_key.json`, the app still runs but event logs will be saved to a local `data/events.csv` fallback instead of Google Sheets.
 
-Priority: **URL parameter > Cookie > Random 50/50**
+---
 
-- `?group=A` or `?group=B` forces assignment (for QA testing)
-- Otherwise, new users are randomly assigned and the group is stored in a cookie (30-day expiry)
-- Returning users see the same version; logged as `returning=TRUE`
+## 🧪 Experimental Design
 
-## Events Logged
+### A/B Assignment
+Users are assigned via a three-tier priority system:
+1. **URL parameter** — `?group=A` or `?group=B` forces assignment (for QA only)
+2. **Cookie persistence** — returning users stay in their original group (30-day expiry)
+3. **Random 50/50** — new users are randomly assigned
 
-All events are written to **both** Google Sheets and Google Analytics simultaneously
-(except `session_end` / `dropout`, which only go to Sheets since the session has already
-disconnected and cannot send client-side events).
+### Data Collection
+A dual-stream logging architecture captures every user interaction:
+- **Google Sheets (primary):** Real-time, row-level event log via `googlesheets4` with service-account authentication
+- **Google Analytics 4 (supplementary):** Client-side events via `gtag.js` for aggregate engagement context
 
-| event           | step               | extra                                              |
-| --------------- | ------------------ | -------------------------------------------------- |
-| `session_start` | 0                  | `returning=TRUE/FALSE`                             |
-| `step_next`     | step left          | `time_secs=X` (seconds spent on that step)         |
-| `step_back`     | step left          | `time_secs=X`                                      |
-| `completed`     | 8                  | —                                                  |
-| `restart`       | step when clicked  | —                                                  |
-| `dropout`       | step when exited   | `dropout_at_step=X;secs_on_step=Y` *(Sheets only)* |
-| `session_end`   | step when exited   | `completed=T/F;last_step_secs=X` *(Sheets only)*   |
+### Events Logged
 
-### GA4 event parameters
+| Event           | Step             | Extra Info                              |
+| --------------- | ---------------- | --------------------------------------- |
+| `session_start` | 0                | `returning=TRUE/FALSE`                  |
+| `step_next`     | step departed    | `time_secs=X`                           |
+| `step_back`     | step departed    | `time_secs=X`                           |
+| `completed`     | 8                | —                                       |
+| `restart`       | current step     | —                                       |
+| `dropout`       | exit step        | `dropout_at_step=X;secs_on_step=Y`      |
+| `session_end`   | exit step        | `completed=T/F;last_step_secs=X`        |
 
-Every GA event carries:
-- `ab_group` — "A" or "B"
-- `step` — integer 0–8
-- `session_id` — matches the Sheets row, enables cross-reference
-- `extra` — raw extra-info string
+---
 
-A/B group is also set as a **user property** (`ab_group`), so GA4's built-in
-comparisons and segments work across all default reports.
+## 📊 Key Results
 
-## Admin Dashboard
+### Real Data (31 sessions: 26 A, 5 B)
+- **Group A:** 0% completion rate (0/26)
+- **Group B:** 20% completion rate (1/5)
+- Fisher's exact test: p = 0.161 (not significant due to small sample)
 
-Visit `?admin=1` to see live stats:
-- Total sessions per group
-- Completion rate per group
-- Median dropout step per group
-- Download full CSV
+### Combined Data (Real + Simulated, 60 per group)
+- **Group A:** 31.7% completion rate
+- **Group B:** 66.7% completion rate
+- Two-proportion z-test: χ² = 13.34, p = 0.000260
 
-## Verifying GA is working
+> **Note:** The combined dataset is 74% simulated. Statistical significance in the combined analysis reflects the simulation parameters, not observed user behavior. See the report for full discussion.
 
-1. Open the app with browser DevTools open (F12) → Network tab
-2. Filter by `collect` — you should see requests to `google-analytics.com/g/collect`
-3. Or install the [GA Debugger Chrome extension](https://chrome.google.com/webstore/detail/google-analytics-debugger/jnkmfdileelhofjcijamephohjechhna)
-4. In GA4 console: **Reports → Realtime** — you should see yourself within ~30 seconds
-5. Custom events appear in **Reports → Events** (may take 24h to fully populate)
+---
 
-## Deployment
+## 📈 Analysis
 
-Edit `deploy.R` with your shinyapps.io credentials, then:
+The full analysis pipeline is in `EDA+Visualization.ipynb`, including:
+- Data cleaning and session-level aggregation
+- Real-data Fisher's exact test
+- Simulated data generation
+- Combined-data chi-square test, t-test, and Wilcoxon test
+- Visualizations: completion rate bar charts, dropout step distributions, retention curves, steps-completed boxplots
 
-```r
-source("deploy.R")
-```
+---
 
-## For the Data-Analysis Teammate
+## 👥 Team Members
 
-Pull the data directly from Google Sheets:
+- **Qixiang Fan** — Shiny app development (UI/UX, itinerary generation, A/B version design)
+- **Qiujun Zhang** — A/B test infrastructure, data logging, Google Sheets/GA integration, deployment
+- **Feiran Guo** — Data cleaning, EDA, statistical analysis, visualization
+- **Ayaz Khan** — Report writing
 
-```r
-library(googlesheets4)
-gs4_auth(path = "secrets/gs_key.json")
-events <- read_sheet("PASTE_SHEET_ID", sheet = "events")
+---
 
-# Completion rate per group
-library(dplyr)
-events %>%
-  group_by(group) %>%
-  summarise(
-    starts = n_distinct(session_id[event == "session_start"]),
-    comps  = n_distinct(session_id[event == "completed"]),
-    rate   = comps / starts
-  )
+## 📌 Technologies Used
 
-# Dropout step distribution
-events %>% filter(event == "dropout") %>% count(group, step)
-```
+- R / Shiny / shinyjs
+- Google Sheets API (`googlesheets4`)
+- Google Analytics 4
+- Python (Jupyter Notebook for analysis)
+- shinyapps.io (deployment)
 
-## Security Note
+---
 
-`secrets/gs_key.json` grants write access to the Sheet. If pushing to a **public** GitHub repo, add `secrets/` to `.gitignore` and share the key with teammates another way. For a private class repo this is fine.
+## 📄 License
+
+This project is for academic use (STATGR5243 Project 3, Columbia University).
