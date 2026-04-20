@@ -16,8 +16,15 @@ library(googlesheets4)
 SHEET_ID <- "1ar-7UOqyDJ_0nS09AHbcOdh5a6xgrl3zFgmdfhFk0gg"
 
 SECRET_PATH <- "secrets/gs_key.json"
+
 if (file.exists(SECRET_PATH)) {
-  gs4_auth(path = SECRET_PATH)
+  tryCatch(
+    gs4_auth(path = SECRET_PATH),
+    error = function(e) {
+      message("gs4_auth failed: ", e$message, ". Falling back to deauth.")
+      gs4_deauth()
+    }
+  )
 } else {
   message("WARNING: ", SECRET_PATH, " not found. ",
           "Cloud logging disabled; will write to local data/events.csv only.")
