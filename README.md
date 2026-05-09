@@ -140,7 +140,7 @@ The full analysis pipeline is in `EDA+Visualization.ipynb`, including:
 - **Qixiang Fan** — Shiny app development (UI/UX, itinerary generation, A/B version design)
 - **Qiujun Zhang** — A/B test infrastructure, data logging, Google Sheets/GA integration, deployment
 - **Feiran Guo** — Data cleaning, EDA, statistical analysis, visualization
-- **Ayaz Khan** — Report writing
+- **Ayaz Khan** — Report writing and compiling
 
 ---
 
